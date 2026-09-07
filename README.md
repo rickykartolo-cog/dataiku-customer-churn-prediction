@@ -1,5 +1,13 @@
 # Customer Churn Prediction
 
+## Databricks migration
+
+The Dataiku flow is also available as a PySpark package and a three-task
+Databricks Asset Bundle Job. See [docs/MIGRATION.md](docs/MIGRATION.md) for
+the recipe mapping, translation details, local test commands, and deployment
+notes. Override `--base_output_path` with a Unity Catalog Volume path such as
+`/Volumes/<catalog>/<schema>/churn` or a DBFS path when running the tasks.
+
 ## Overview
 This project focuses on predicting telecom customer churn using Machine Learning models in **Dataiku DSS**. It combines **K-Means clustering** for customer segmentation and **Random Forest classification** for churn prediction, helping telecom companies identify at-risk customers and reduce revenue loss.
 
@@ -52,4 +60,3 @@ Accurate churn prediction enables telecom companies to implement data-driven ret
 
 ## Author
 **Shreya Thakur**
-

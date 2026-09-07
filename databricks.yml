@@ -1,0 +1,25 @@
+bundle:
+  name: dataiku_churn_pipeline
+
+include:
+  - resources/*.yml
+
+workspace:
+  host: https://<your-workspace>.cloud.databricks.com
+
+variables:
+  base_output_path:
+    default: /tmp/churn_pipeline
+  output_format:
+    default: delta
+  node_type_id:
+    default: i3.xlarge
+  spark_version:
+    default: 15.4.x-scala2.12
+
+targets:
+  dev:
+    default: true
+    mode: development
+  prod:
+    mode: production
