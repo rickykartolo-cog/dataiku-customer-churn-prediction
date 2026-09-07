@@ -1,0 +1,61 @@
+resources:
+  jobs:
+    churn_flow:
+      name: churn_flow
+      max_concurrent_runs: 1
+      parameters:
+        - name: base_output_path
+          default: ${var.base_output_path}
+        - name: output_format
+          default: ${var.output_format}
+        - name: seed
+          default: "1337"
+        - name: train_share
+          default: "0.8"
+      job_clusters:
+        - job_cluster_key: churn_cluster
+          new_cluster:
+            spark_version: ${var.spark_version}
+            node_type_id: ${var.node_type_id}
+            num_workers: 0
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*, 4]"
+            custom_tags:
+              ResourceClass: SingleNode
+      tasks:
+        - task_key: join
+          job_cluster_key: churn_cluster
+          spark_python_task:
+            python_file: ../churn_pipeline/tasks/join_task.py
+            parameters:
+              - --base_output_path
+              - "{{job.parameters.base_output_path}}"
+              - --output_format
+              - "{{job.parameters.output_format}}"
+        - task_key: prepare
+          depends_on:
+            - task_key: join
+          job_cluster_key: churn_cluster
+          spark_python_task:
+            python_file: ../churn_pipeline/tasks/prepare_task.py
+            parameters:
+              - --base_output_path
+              - "{{job.parameters.base_output_path}}"
+              - --output_format
+              - "{{job.parameters.output_format}}"
+        - task_key: split
+          depends_on:
+            - task_key: prepare
+          job_cluster_key: churn_cluster
+          spark_python_task:
+            python_file: ../churn_pipeline/tasks/split_task.py
+            parameters:
+              - --base_output_path
+              - "{{job.parameters.base_output_path}}"
+              - --output_format
+              - "{{job.parameters.output_format}}"
+              - --seed
+              - "{{job.parameters.seed}}"
+              - --train_share
+              - "{{job.parameters.train_share}}"

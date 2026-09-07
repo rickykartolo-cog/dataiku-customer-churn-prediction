@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "churn-pipeline"
+version = "0.1.0"
+description = "PySpark migration of the Dataiku customer churn flow"
+requires-python = ">=3.10"
+dependencies = ["pyspark>=3.5,<3.6"]
+
+[project.optional-dependencies]
+test = ["pytest", "delta-spark==3.2.0"]
+
+[tool.setuptools.packages.find]
+include = ["churn_pipeline*"]
