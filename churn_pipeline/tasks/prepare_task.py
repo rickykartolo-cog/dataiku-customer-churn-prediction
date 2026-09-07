@@ -10,7 +10,13 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from churn_pipeline.io import JOINED_SCHEMA, get_spark, read_dataset, write_dataset
+from churn_pipeline.io import (
+    DATASET_DIRS,
+    JOINED_SCHEMA,
+    get_spark,
+    read_dataset,
+    write_dataset,
+)
 from churn_pipeline.recipes.prepare import prepare_joined
 
 
@@ -25,8 +31,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
-    joined_path = args.joined_path or str(Path(args.base_output_path) / "joined")
-    prepared_path = args.prepared_path or str(Path(args.base_output_path) / "prepared")
+    joined_path = args.joined_path or str(
+        Path(args.base_output_path) / DATASET_DIRS["joined"]
+    )
+    prepared_path = args.prepared_path or str(
+        Path(args.base_output_path) / DATASET_DIRS["prepared"]
+    )
     spark = get_spark()
     joined = read_dataset(
         spark,

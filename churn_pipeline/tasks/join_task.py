@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from churn_pipeline.io import get_spark, read_source_csv, write_dataset
+from churn_pipeline.io import DATASET_DIRS, get_spark, read_source_csv, write_dataset
 from churn_pipeline.recipes.join import join_80_20
 
 
@@ -32,7 +32,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
-    joined_path = args.joined_path or str(Path(args.base_output_path) / "joined")
+    joined_path = args.joined_path or str(
+        Path(args.base_output_path) / DATASET_DIRS["joined"]
+    )
     spark = get_spark()
     result = join_80_20(
         read_source_csv(spark, args.input_80_path),

@@ -9,9 +9,9 @@ casts, matching the DSS dataset schemas.
 
 | DSS recipe | DSS input dataset(s) | PySpark task | Output dataset |
 | --- | --- | --- | --- |
-| `compute_churn_bigml_80_joined` | `churn_bigml_80`, `churn_bigml_20` | `churn_pipeline.tasks.join_task` | `<base_output_path>/joined` |
-| `compute_churn_bigml_80_joined_prepared` | `churn_bigml_80_joined` | `churn_pipeline.tasks.prepare_task` | `<base_output_path>/prepared` |
-| `split_churn_bigml_80_joined_prepared` | `churn_bigml_80_joined_prepared` | `churn_pipeline.tasks.split_task` | `<base_output_path>/train`, `<base_output_path>/test` |
+| `compute_churn_bigml_80_joined` | `churn_bigml_80`, `churn_bigml_20` | `churn_pipeline.tasks.join_task` | `<base_output_path>/churn_bigml_80_joined` |
+| `compute_churn_bigml_80_joined_prepared` | `churn_bigml_80_joined` | `churn_pipeline.tasks.prepare_task` | `<base_output_path>/churn_bigml_80_joined_prepared` |
+| `split_churn_bigml_80_joined_prepared` | `churn_bigml_80_joined_prepared` | `churn_pipeline.tasks.split_task` | `<base_output_path>/churn_data_train`, `<base_output_path>/churn_data_test` |
 
 The `churn_flow` Asset Bundle Job runs these tasks in the same dependency order
 on one single-node job cluster. Delta is the default output format; Parquet and
@@ -50,3 +50,57 @@ python -m churn_pipeline.tasks.split_task --output_format parquet --base_output_
 
 For a deployed job, set `base_output_path` to a Unity Catalog Volume such as
 `/Volumes/<catalog>/<schema>/churn`, or to a DBFS path.
+
+## Running on Databricks
+
+Validate and deploy the Asset Bundle, then run the whole DAG:
+
+```bash
+databricks bundle validate
+databricks bundle deploy -t dev
+databricks bundle run churn_flow -t dev
+```
+
+You can override job parameters when running the bundle, for example:
+
+```bash
+databricks bundle run churn_flow -t dev \
+  --params base_output_path=/Volumes/<catalog>/<schema>/churn,output_format=delta
+```
+
+`databricks bundle run churn_flow --only split` is not supported for rerunning
+one task. For debugging, use the deployed job ID with `jobs run-now` and an
+`only` task selection (upstream outputs must already exist):
+
+```bash
+databricks jobs run-now <job_id> \
+  --json '{"only": ["prepare"]}'
+```
+
+Alternatively, run a task file directly from a notebook or cluster:
+
+```python
+%sh python /Workspace/<bundle root>/files/churn_pipeline/tasks/prepare_task.py \
+  --base_output_path /Volumes/<catalog>/<schema>/churn \
+  --output_format delta
+```
+
+On Databricks, a scheme-less path such as `/tmp/churn_pipeline` resolves to
+`dbfs:/tmp/churn_pipeline`, so intermediate outputs persist between tasks. On
+a local machine, the same path refers to the local filesystem.
+
+## Verification checklist
+
+| Check | Local verification | Workspace verification |
+| --- | --- | --- |
+| Tasks run in order: `join` → `prepare` → `split` | End-to-end pytest invokes the three task entrypoints in order | Run the deployed `churn_flow` DAG |
+| Join writes 40 prefixed columns and 13,229 rows | Verified by `test_join.py` | Confirm the deployed join task output |
+| Prepare writes 42 columns with the two derived columns | Verified by `test_prepare.py` | Confirm the deployed prepare task schema |
+| Charge filter leaves 13,184 rows | Verified by `test_prepare.py` | Confirm the deployed prepared dataset count |
+| Seed-1337 split writes 10,584 train and 2,600 test rows (about 80.3% / 19.7%) | Verified by the local task run and end-to-end pytest | Confirm counts in the deployed job outputs |
+| Final outputs are `churn_data_train` and `churn_data_test` | Verified by `test_pipeline_end_to_end.py` | Confirm the dataset directories in the configured workspace path |
+
+The local checks above were run with pytest and local PySpark. Bundle
+validation, deployment, Databricks task scheduling, DBFS/Volume path
+resolution, and a workspace execution require Databricks credentials and a
+workspace run.

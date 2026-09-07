@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
-
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import DoubleType, LongType, StringType, StructField, StructType
 
@@ -29,6 +27,13 @@ INPUT_COLUMNS = [
     "Customer service calls",
     "Churn",
 ]
+
+DATASET_DIRS = {
+    "joined": "churn_bigml_80_joined",
+    "prepared": "churn_bigml_80_joined_prepared",
+    "train": "churn_data_train",
+    "test": "churn_data_test",
+}
 
 PREPARED_COLUMNS = [
     "80_State",
@@ -141,18 +146,6 @@ def read_dataset(
         if schema is not None:
             reader = reader.schema(schema)
     return reader.format(fmt).load(path)
-
-
-def get_param(name: str, default: str) -> str:
-    """Get a Databricks widget value or a command-line parameter."""
-    if "dbutils" in globals():
-        try:
-            return globals()["dbutils"].widgets.get(name)
-        except Exception:
-            pass
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument(f"--{name}", default=default)
-    return parser.parse_known_args()[0].__dict__[name]
 
 
 def get_spark() -> SparkSession:

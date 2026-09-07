@@ -10,7 +10,13 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from churn_pipeline.io import PREPARED_SCHEMA, get_spark, read_dataset, write_dataset
+from churn_pipeline.io import (
+    DATASET_DIRS,
+    PREPARED_SCHEMA,
+    get_spark,
+    read_dataset,
+    write_dataset,
+)
 from churn_pipeline.recipes.split import split_train_test
 
 
@@ -28,9 +34,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
-    prepared_path = args.prepared_path or str(Path(args.base_output_path) / "prepared")
-    train_path = args.train_path or str(Path(args.base_output_path) / "train")
-    test_path = args.test_path or str(Path(args.base_output_path) / "test")
+    prepared_path = args.prepared_path or str(
+        Path(args.base_output_path) / DATASET_DIRS["prepared"]
+    )
+    train_path = args.train_path or str(
+        Path(args.base_output_path) / DATASET_DIRS["train"]
+    )
+    test_path = args.test_path or str(
+        Path(args.base_output_path) / DATASET_DIRS["test"]
+    )
     spark = get_spark()
     prepared = read_dataset(
         spark,
